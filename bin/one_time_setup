@@ -39,8 +39,9 @@ def place_the_launch_icon():
 
 def setup_configuration():
     print("Creating the configuration for you to fill out.")
+    ensure_directory_exists(str(resources.PATH_CONFIG_DIR))
     ensure_configuration_exists(str(resources.PATH_CREDENTIALS_FILE), CONFIGURATION_FORMAT)
-    print("Adding 'connect_vpn' command to ~/.bash_aliases")
+    print("Added {} to: {} \n---> fill out this file with your credentials.".format(str(resources.CONFIGURE_CONNECTION_FILE_NAME), str(resources.PATH_CONFIG_DIR)))
 
 
 def creating_alias():
@@ -49,8 +50,8 @@ def creating_alias():
     with open(str(resources.PATH_BASH_ALIASES), "a") as bash_aliases:
         bash_aliases.write(alias_cmd)
 
+    print("Adding 'connect_vpn' command to ~/.bash_aliases")
     print("Wrote:{}\n".format(alias_cmd))
-    print("DONE. To run just type 'connect_vpn' into a terminal.")
 
 
 # TODO All of this should be automatically done with setup.py when installing with pipy.
@@ -59,3 +60,4 @@ place_the_desktop_file()
 place_the_launch_icon()
 setup_configuration()
 # creating_alias()
+print("DONE - SUCCESS")
