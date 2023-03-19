@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+
+import sys
+from os.path import abspath, dirname, join
+import shutil
+
+try:
+    import connect_vpn
+except ImportError:
+    sys.path.append(abspath(join(dirname(__file__), '..')))
+    import connect_vpn
+
+from connect_vpn.common import resources
+from connect_vpn.configuration_handler import ensure_configuration_exists, CONFIGURATION_FORMAT
+from connect_vpn.common.util import ensure_directory_exists, create_file_anew
+
+
+def get_desktop_launch_file_content():
+    return resources.DESKTOP_LAUNCH_FILE_FORMAT.format(resources.APPLICATION_NAME, str(resources.PATH_BIN_DIR))
+
+
+def place_the_desktop_file():
+    content = get_desktop_launch_file_content()
+    file_path = str(resources.PATH_LAUNCH_DESKTOP_FILE_DESTINATION)
+    ensure_directory_exists(str(resources.PATH_USER_LOCAL_SHARE_APPLICATION))
+    create_file_anew(file_path, content)
+    print("Added {} to: {}".format(str(resources.LAUNCH_DESKTOP_FILENAME),
+                                   str(resources.PATH_USER_LOCAL_SHARE_APPLICATION)))
+
+
+def place_the_launch_icon():
+    source = str(resources.PATH_VPN_LAUNCH_ICON_SOURCE)
+    destination = str(resources.PATH_VPN_LAUNCH_ICON_DESTINATION)
+    ensure_directory_exists(str(resources.PATH_USER_LOCAL_SHARE_ICONS))
+    shutil.copyfile(source, destination)
+    print("Added {} to: {}".format(str(resources.LAUNCH_ICON_FILE_NAME),
+                                   str(resources.PATH_USER_LOCAL_SHARE_ICONS)))
+
+
+def setup_configuration():
+    print("Creating the configuration for you to fill out.")
+    ensure_configuration_exists(str(resources.PATH_CREDENTIALS_FILE), CONFIGURATION_FORMAT)
+    print("Adding 'connect_vpn' command to ~/.bash_aliases")
+
+
+def creating_alias():
+    alias_cmd = '\nalias connect_vpn="cd {} && {}"'.format(str(resources.PATH_BIN_DIR), str(
+        resources.RUN_CONNECT_VPN_SCRIPT))
+    with open(str(resources.PATH_BASH_ALIASES), "a") as bash_aliases:
+        bash_aliases.write(alias_cmd)
+
+    print("Wrote:{}\n".format(alias_cmd))
+    print("DONE. To run just type 'connect_vpn' into a terminal.")
+
+
+# TODO All of this should be automatically done with setup.py when installing with pipy.
+
+place_the_desktop_file()
+place_the_launch_icon()
+setup_configuration()
+# creating_alias()

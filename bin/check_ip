@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+
+import sys
+from os.path import abspath, dirname, join
+
+try:
+    import connect_vpn
+except ImportError:
+    sys.path.append(abspath(join(dirname(__file__), '..')))
+    import connect_vpn
+
+
+from connect_vpn.check_ip import get_public_ip
+print(get_public_ip())

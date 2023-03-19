@@ -1,0 +1,12 @@
+
+connect_vpn/__pycache__/
+
+connect_vpn/common/__pycache__/
+
+connect_vpn/ui/__pycache__/
+
+config/configure_connection.yaml
+
+config/user_settings.yaml
+
+.vscode/
