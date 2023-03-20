@@ -11,6 +11,11 @@ It uses pexpect to handle the openvpn-connection and therefore works with any op
 
 ## Setup
 
+Install apt dependencies:
+```shell
+sudo apt install libgirepository1.0-dev
+```
+
 Clone the repository.
 
 Change to the project directory and run:
