@@ -64,4 +64,7 @@ At the moment login credentials reside in a plain text file. This is a security 
 
 ! Use this project and any of it's content fully at your own risk !.
 
+## Attribution
+
+This site or product includes IP2Location LITE data available from <a href="https://lite.ip2location.com">https://lite.ip2location.com</a>.
 
