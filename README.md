@@ -15,9 +15,11 @@ Install apt dependencies:
 ```shell
 sudo apt install libgirepository1.0-dev
 ```
-
 ```shell
 sudo apt-get install python3-cairo-dev
+```
+```shell
+sudo apt-get install gir1.2-appindicator3-0.1
 ```
 
 Clone the repository.
@@ -55,9 +57,16 @@ OPENVPN_SCRIPT_PATH: ""
 
 ```
 
+## Check out your setup
+
+Run the application from terminal which will provide you with additional information if everything was setup correctly.
+```shell
+./bin/connect_vpn
+```
+
 ## Running this project
 
-After the setup a launch menu entry named: `O-VPN-Connect` is added and can just be executed.
+After the setup a launch menu entry named: `O-VPN-Connect` is added and can just be clicked / or run it from the terminal like above.
 
 After startup an application indicator will appear next to the wifi symbol (in ubuntu atleast).
 You will figure it out from there? right ?
