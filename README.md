@@ -16,6 +16,10 @@ Install apt dependencies:
 sudo apt install libgirepository1.0-dev
 ```
 
+```shell
+sudo apt-get install python3-cairo-dev
+```
+
 Clone the repository.
 
 Change to the project directory and run:
