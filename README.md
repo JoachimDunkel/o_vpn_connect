@@ -29,7 +29,7 @@ pip install -r requirements.txt
 
 Run the setup script:
 ```shell
-./bin/one_time_setup
+sudo ./bin/one_time_setup
 ```
 
 When first starting the application it will create a `configure_connection.yaml` in the directory root.
