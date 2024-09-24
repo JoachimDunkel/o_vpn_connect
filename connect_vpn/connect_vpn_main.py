@@ -13,10 +13,10 @@ from gi.repository import GLib
 from connect_vpn.ui.settings_ui import SettingsWindow
 from connect_vpn.common import resources
 from connect_vpn.common.resources import ApplicationStatus
-from .establish_connection import ConnectorBackend
-from .configuration_handler import read_credentials
-from .ip_info import IPInformation
-from .icon_status_handler import IconStatusHandler
+from connect_vpn.establish_connection import ConnectorBackend
+from connect_vpn.configuration_handler import read_credentials
+from connect_vpn.ip_info import IPInformation
+from connect_vpn.icon_status_handler import IconStatusHandler
 
 
 class VPNConnectorApp:
@@ -62,6 +62,7 @@ class VPNConnectorApp:
     def on_other_process_holds_connection(self, ip):
         msg = resources.OTHER_PROCESS_HOLDS_CONNECTION_FORMAT.format(ip)
         self.notify_user(msg)
+        print("Other process holds connection. Exiting")
         exit(-1)
 
     @staticmethod

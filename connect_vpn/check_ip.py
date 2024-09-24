@@ -4,21 +4,21 @@ import time
 import random
 
 REQUEST_TIMEOUT_SEC = 10
-
+INDIVIDUAL_TIMEOUT_SEC = 2
 
 def _query_checkip_dyndns():
     url = 'http://checkip.dyndns.com/'
-    body = get(url, verify=False).content.decode('utf8')
+    body = get(url, verify=False, timeout=INDIVIDUAL_TIMEOUT_SEC).content.decode('utf8')
     return r.compile(r'Address: (\d+\.\d+\.\d+\.\d+)').search(body).group(1)
 
 
 def _query_amazon_aws():
-    return get('https://checkip.amazonaws.com').text.strip()
+    return get('https://checkip.amazonaws.com', timeout=INDIVIDUAL_TIMEOUT_SEC).text.strip()
 
 
 def _query_api_ipify():
     url = 'https://api.ipify.org'
-    return get(url).content.decode('utf8')
+    return get(url, timeout=INDIVIDUAL_TIMEOUT_SEC).content.decode('utf8')
 
 
 def get_public_ip():
