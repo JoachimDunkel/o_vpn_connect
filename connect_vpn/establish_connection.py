@@ -3,7 +3,7 @@ import ctypes.util
 import getpass
 import signal
 import sys
-import time
+import os
 
 import pexpect
 from .common.tasks import CallbackTask

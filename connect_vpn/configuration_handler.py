@@ -63,8 +63,8 @@ def read_credentials(connection_backend):
 
             connection_backend.config.VPN_PUB_IP = _ensure_config_value_provided(credentials['VPN_PUB_IP'], errors,
                                                                                  ERROR_IPV4_MISSING)
-            connection_backend.config.OPENVPN_SCRIPT_PATH = _ensure_config_value_provided(
-                credentials['OPENVPN_SCRIPT_PATH'], errors, ERROR_OPENVPN_SCRIPT_PATH_MISSING)
+            connection_backend.config.OPENVPN_SCRIPT_PATH = os.path.expanduser(_ensure_config_value_provided(
+                credentials['OPENVPN_SCRIPT_PATH'], errors, ERROR_OPENVPN_SCRIPT_PATH_MISSING))
             connection_backend.config.SUDO_PW = _ensure_config_value_provided(credentials['SUDO_PW'], errors,
                                                                               ERROR_SUDP_PW_MISSING)
             connection_backend.config.USER_NAME = _ensure_config_value_provided(credentials['USER_NAME'], errors,
@@ -80,3 +80,5 @@ def read_credentials(connection_backend):
 
         except yaml.YAMLError as e:
             connection_backend.on_read_credentials_failed()
+        except Exception as e:
+            connection_backend.on_other_connection_failure(e)
