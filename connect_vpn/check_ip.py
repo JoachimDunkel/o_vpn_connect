@@ -1,9 +1,9 @@
 import re as r
 from requests import get
-import time
-import random
+import concurrent.futures
 
 INDIVIDUAL_TIMEOUT_SEC = 2
+
 
 def _query_checkip_dyndns():
     url = 'http://checkip.dyndns.com/'
@@ -22,13 +22,16 @@ def _query_api_ipify():
 
 def get_public_ip():
     api_endpoints = [_query_amazon_aws, _query_checkip_dyndns, _query_api_ipify]
-    for query_endpoint in api_endpoints:
-        try:
-            ip = query_endpoint()
-            return ip
-        except Exception as _:
-            print("Failed getting Public IP")
-            pass  # Ignore
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(api_endpoints)) as executor:
+        future_to_endpoint = {executor.submit(endpoint): endpoint for endpoint in api_endpoints}
+        for future in concurrent.futures.as_completed(future_to_endpoint):
+            try:
+                ip = future.result()
+                return ip  # Return the first successful result
+            except Exception:
+                pass  # Try the next one
+    return None
 
 
 if __name__ == "__main__":
