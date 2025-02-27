@@ -28,6 +28,7 @@ class IconStatusHandler:
         self.update_icon()
 
     def on_disconnected(self):
+        self.blink_icon = False
         self.update_icon_status(IconStatus.DISCONNECTED)
         self.update_icon()
 

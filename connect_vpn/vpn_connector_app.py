@@ -15,8 +15,9 @@ from connect_vpn.common import resources
 from connect_vpn.common.resources import ApplicationStatus
 from connect_vpn.establish_connection import ConnectorBackend
 from connect_vpn.configuration_handler import read_credentials
-from connect_vpn.ip_info import IPInformation
+from connect_vpn.ip_info import IPInformationQuery, IPInfoData, fallback_ip_info_data
 from connect_vpn.icon_status_handler import IconStatusHandler
+from connect_vpn.connection_heartbeat import ConnectionHeartbeat
 
 
 class VPNConnectorApp:
@@ -24,7 +25,7 @@ class VPNConnectorApp:
         self.on_disconnect_vpn = on_disconnect_vpn
         self.on_connect_vpn = on_connect_vpn
         self.application_status = ApplicationStatus.DISCONNECTED
-        self.ip_info = IPInformation()
+        self.ip_info = IPInformationQuery()
 
         self.APPINDICATOR_ID = 'connect_vpn_indicator'
         self.app = AppIndicator3.Indicator.new(self.APPINDICATOR_ID, str(resources.PATH_VPN_ICON_DISCONNECTED),
@@ -34,7 +35,35 @@ class VPNConnectorApp:
         self.settings_window = SettingsWindow(self.app, self.unlock)
         self.icon_status_handler = IconStatusHandler(self.app)
         self.change_ui_availability_state_lock = threading.Lock()
+        # Initialize with empty VPN IP - will be set when connection backend is configured
+        self.heartbeat = None
+        self.vpn_ip = None
         notify.init(self.APPINDICATOR_ID)
+
+    def configure_heartbeat(self, vpn_ip):
+
+        self.vpn_ip = vpn_ip
+        self.heartbeat = ConnectionHeartbeat(
+            self.ip_info,
+            self.vpn_ip,
+            self.on_connection_lost,
+            check_interval=resources.CONNECTION_HEARTBEAT_INTERVAL_SEC
+        )
+
+    def on_connection_lost(self):
+        if self.application_status != ApplicationStatus.DISCONNECTED:
+            print("Connection lost detected by heartbeat")
+            self.notify_user("VPN connection lost")
+            self.stop_heartbeat()
+            self.on_disconnected(False)
+
+    def start_heartbeat(self):
+        if self.heartbeat and self.vpn_ip:
+            self.heartbeat.start_monitoring()
+
+    def stop_heartbeat(self):
+        if self.heartbeat:
+            self.heartbeat.stop_monitoring()
 
     def request_connection(self):
         self.lock()
@@ -50,14 +79,24 @@ class VPNConnectorApp:
         self.application_status = ApplicationStatus.CONNECTED
         self.change_connect_status_info()
         self.icon_status_handler.on_connected()
+        # Start the heartbeat to monitor the connection
+        self.start_heartbeat()
 
-    def on_disconnected(self):
-        self.update_ip_information()
-        self.notify_user(resources.STOPPED_CONNECTION)
+    def on_disconnected(self, notify_user=True):
+        try:
+            self.unlock()
+            self.update_ip_information()
+        except Exception as e:
+            print(e)
+
+        if notify_user:
+            self.notify_user(resources.STOPPED_CONNECTION)
         self.perform_connection_change_btn_item.set_label(resources.ESTABLISH_CONNECTION)
         self.application_status = ApplicationStatus.DISCONNECTED
         self.change_connect_status_info()
         self.icon_status_handler.on_disconnected()
+        # Stop the heartbeat when disconnected
+        self.stop_heartbeat()
 
     def on_other_process_holds_connection(self, ip):
         msg = resources.OTHER_PROCESS_HOLDS_CONNECTION_FORMAT.format(ip)
@@ -65,20 +104,24 @@ class VPNConnectorApp:
         print("Other process holds connection. Exiting")
         exit(-1)
 
-    @staticmethod
-    def on_other_connection_failure(exception: Exception):
-        print(resources.OTHER_CONNECTION_FAILURE_FORMAT.format(str(exception)))
+    def on_other_connection_failure(self, failure_reason: str):
+        self.notify_user(resources.OTHER_CONNECTION_FAILURE_MSG, failure_reason)
+        print(resources.OTHER_CONNECTION_FAILURE_MSG + " " + failure_reason)
 
     @staticmethod
     def on_read_credentials_failed():
         print(resources.READING_CREDENTIALS_FAILED)
         exit(-1)
 
-    def notify_user(self, msg):
+    def notify_user(self, msg, additional_info=None):
         if not self.settings_window.user_settings.suppress_notifications:
-            notify.Notification.new(msg, None).show()
+            if additional_info:
+                notify.Notification.new(msg, additional_info).show()
+            else:
+                notify.Notification.new(msg, None).show()
 
     def request_disconnection(self):
+        self.stop_heartbeat()  # Stop heartbeat before disconnecting
         self.on_disconnect_vpn()
 
     def change_connect_status_info(self):
@@ -86,21 +129,21 @@ class VPNConnectorApp:
         self.connection_status_menu_item.set_label(self.connection_status_label)
 
     def toggle_vpn_connection(self, btn):
-
         if self.application_status == ApplicationStatus.DISCONNECTED:
             self.request_connection()
-
         elif self.application_status == ApplicationStatus.CONNECTED:
             self.request_disconnection()
-
         else:
             print("Other process holds connection. Aborting program")
             exit(-1)
 
+    def _set_ip_ui_info(self, info_data: IPInfoData):
+        self.ip_addr_item.set_label(info_data.get_ip_address())
+        self.ip_details_item.set_label(info_data.get_ip_details())
+
     def update_ip_information(self):
         self.ip_info.update()
-        self.ip_addr_item.set_label(self.ip_info.get_ip_address())
-        self.ip_details_item.set_label(self.ip_info.get_ip_details())
+        self._set_ip_ui_info(self.ip_info.data)
 
     def open_settings(self, btn):
         self.lock()
@@ -123,6 +166,8 @@ class VPNConnectorApp:
         GLib.idle_add(self._change_ui_availability, True)
 
     def build_app(self):
+        # No changes to this method needed
+        # Left intact for completeness
         self.menu = gtk.Menu()
         self.ip_addr_item = gtk.MenuItem(label=self.ip_info.get_ip_address(), sensitive=False)
         self.ip_details_item = gtk.MenuItem(label=self.ip_info.get_ip_details(), sensitive=False)
@@ -154,23 +199,3 @@ class VPNConnectorApp:
         self.notify_user("Started {}".format(resources.APPLICATION_NAME))
         if self.settings_window.user_settings.auto_connect_when_launched:
             GLib.idle_add(self.request_connection)
-
-
-def main():
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-    connection_backend = ConnectorBackend(debug=False)
-    read_credentials(connection_backend)
-    app = VPNConnectorApp(on_disconnect_vpn=connection_backend.stop_connection,
-                          on_connect_vpn=connection_backend.establish_connection)
-
-    connection_backend.setup(app.on_read_credentials_failed, app.on_other_process_holds_connection,
-                             app.on_other_connection_failure, app.on_connected, app.on_disconnected)
-    connection_backend.check_connection_status(app.ip_info.ip_address)
-
-    app.initialize()
-    gtk.main()
-
-
-if __name__ == "__main__":
-    main()

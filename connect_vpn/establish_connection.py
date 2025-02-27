@@ -44,7 +44,7 @@ class ConnectorBackend:
 
     def stop_connection(self):
         self.ensure_child_stopped()
-        self.on_connection_stopped()
+        self.on_connection_stopped(False)
 
     def handle_connection_failed(self, exception):
         self.ensure_child_stopped()
@@ -69,8 +69,10 @@ class ConnectorBackend:
         self.child_process.expect_exact('Initialization Sequence Completed')
 
     def establish_connection(self, curr_ip):
-        self.check_connection_status(curr_ip)
-
+        establishing_is_possible = self.check_connection_status(curr_ip)
+        if not establishing_is_possible:
+            self.stop_connection()
+            return
         # For some reason the vpn connection does not work if pexpect spawns the child process inside a thread
         # (that's why it is not inside _connect_task) ??
         self.child_process = pexpect.spawn(self.config.OPENVPN_SCRIPT_PATH, preexec_fn=_set_pdeathsig)
@@ -81,6 +83,12 @@ class ConnectorBackend:
                                          on_failed=self.handle_connection_failed)
         self.connect_task.start()
 
-    def check_connection_status(self, curr_ip):
-        if curr_ip == self.config.VPN_PUB_IP:
+    def check_connection_status(self, curr_ip) -> bool:
+        if curr_ip is None:
+            self.on_connection_failed("Could not determine IP-Address. Check Network")
+            return False
+        elif curr_ip == self.config.VPN_PUB_IP:
             self.on_already_connected_by_other_process(curr_ip)
+            return False
+
+        return True

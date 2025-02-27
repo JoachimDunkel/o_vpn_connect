@@ -34,7 +34,7 @@ PATH_IMAGES = PATH_CONNECT_VPN / 'images'
 PATH_VPN_ICON_DISCONNECTED = PATH_IMAGES / 'key_white.png'
 PATH_VPN_ICON_CONNECTED = PATH_IMAGES / 'key_green.png'
 PATH_VPN_ICON_ESTABLISH_CONNECTION_1 = PATH_IMAGES / "key_white.png"
-PATH_VPN_ICON_ESTABLISH_CONNECTION_2 = PATH_IMAGES / 'grey_green.png'
+PATH_VPN_ICON_ESTABLISH_CONNECTION_2 = PATH_IMAGES / 'key_grey_green.png'
 
 LAUNCH_DESKTOP_FILENAME = PROJECT_ROOT_NAME + '.desktop'
 PATH_USER_LOCAL_SHARE = Path('/usr/local/share')
@@ -55,7 +55,9 @@ class ApplicationStatus(Enum):
     DISCONNECTED = 0
     CONNECTED = 1
     CONNECTED_BY_OTHER_PROCESS = 2
+    CONNECTION_LOST = 3
 
+CONNECTION_HEARTBEAT_INTERVAL_SEC = 5
 
 ESTABLISH_CONNECTION = 'Connect to VPN'
 STOP_CONNECTION = 'Disconnect from VPN'
@@ -68,7 +70,7 @@ OTHER_PROCESS_HOLDS_CONNECTION_FORMAT = "Your ip: {} \n You are already connecte
 READING_CREDENTIALS_FAILED = "Can not read credentials. Make sure they are provided as expected in the " \
                              "configure_connection.yaml\nExiting"
 
-OTHER_CONNECTION_FAILURE_FORMAT = "FAILURE - Unable to establish connection.\nException:\n{}"
+OTHER_CONNECTION_FAILURE_MSG = "FAILURE - Unable to establish connection"
 SETTINGS_BTN_LABEL = "Settings"
 
 DESKTOP_LAUNCH_FILE_FORMAT = """\n[Desktop Entry]\nTerminal=false\nStartupNotify=false\nType=Application\nName={}\nComment="Connect and monitor script based openvpn connection with an easy to use and intuitive gui"\nExec=bash -c 'cd {} && ./connect_vpn'\nIcon=connect_vpn_logo\n"""

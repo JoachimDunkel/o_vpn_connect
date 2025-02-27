@@ -3,7 +3,6 @@ from requests import get
 import time
 import random
 
-REQUEST_TIMEOUT_SEC = 10
 INDIVIDUAL_TIMEOUT_SEC = 2
 
 def _query_checkip_dyndns():
@@ -23,21 +22,13 @@ def _query_api_ipify():
 
 def get_public_ip():
     api_endpoints = [_query_amazon_aws, _query_checkip_dyndns, _query_api_ipify]
-
-    random_endpoint_idx = random.randint(0, len(api_endpoints) - 1)
-    timeout = time.time() + REQUEST_TIMEOUT_SEC  # 10 seconds from now.
-
-    tries = 0
-
-    while time.time() < timeout:
-        query_endpoint = api_endpoints[random_endpoint_idx]
+    for query_endpoint in api_endpoints:
         try:
             ip = query_endpoint()
             return ip
         except Exception as _:
-            tries += 1  # Try until it works.
-
-    raise ValueError("Connection Timeout-while retrieving ip-address after {} tries.".format(str(tries)))
+            print("Failed getting Public IP")
+            pass  # Ignore
 
 
 if __name__ == "__main__":

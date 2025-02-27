@@ -10,5 +10,5 @@ except ImportError:
     import connect_vpn
 
 
-from connect_vpn.connect_vpn_main import main
+from connect_vpn.main import main
 main()
