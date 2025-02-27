@@ -1,6 +1,9 @@
-pexpect~=4.8.0
-pyyaml~=6.0
+pexpect
+pyyaml
 pycairo
-PyGObject==3.44.0
-IP2Location~=8.9.0
-requests~=2.28.2
+PyGObject
+IP2Location
+requests
+easysnmp
+lark
+numpy
