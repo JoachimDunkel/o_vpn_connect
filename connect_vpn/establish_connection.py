@@ -3,9 +3,10 @@ import ctypes.util
 import getpass
 import signal
 import sys
-import os
-
+from typing import Optional
 import pexpect
+
+from connect_vpn.child_terminator import ChildTerminator
 from .common.tasks import CallbackTask
 from gi.repository import GLib
 
@@ -30,7 +31,7 @@ class ConnectionConfiguration:
 class ConnectorBackend:
     def __init__(self, debug=False):
         self.config = ConnectionConfiguration()
-        self.child_process: pexpect.spawn = None
+        self.child_process: Optional[pexpect.spawn] = None
         self.debug = debug
 
     def setup(self, on_read_credentials_failed, on_already_connected_by_other_process,
@@ -51,15 +52,20 @@ class ConnectorBackend:
         self.on_connection_failed(exception)
 
     def ensure_child_stopped(self):
-        if self.child_process is not None:
-            try:
-                self.child_process.close()
-            except Exception as _:
-                self.child_process.kill(signal.SIGTERM)
-            self.child_process.wait()
-            self.child_process = None
+        # def ensure_child_stopped(self):
+        if self.child_process is None:
+            return
+
+
+        terminator = ChildTerminator(self.child_process)
+        terminator.terminate()
+        self.child_process = None
+
 
     def _connect_task(self, args):
+        if self.child_process is None:
+            raise RuntimeError("ovpn-cli child process is not initialized")
+            
         self.child_process.expect_exact('[sudo] password for {}: '.format(getpass.getuser()))
         self.child_process.sendline(self.config.SUDO_PW)
         self.child_process.expect_exact('Enter Auth Username: ')
