@@ -1,14 +1,15 @@
 import ctypes
 import ctypes.util
 import getpass
+import os
 import signal
 import sys
 from typing import Optional
 import pexpect
 
-from connect_vpn.child_terminator import ChildTerminator
 from .common.tasks import CallbackTask
 from gi.repository import GLib
+import time
 
 PR_SET_PDEATHSIG = 1
 
@@ -52,13 +53,16 @@ class ConnectorBackend:
         self.on_connection_failed(exception)
 
     def ensure_child_stopped(self):
-        # def ensure_child_stopped(self):
-        if self.child_process is None:
-            return
 
+        try:
+            if self.child_process is None or self.child_process.pid is None:
+                return
+            if self.child_process.isalive():
+                self.child_process.terminate(force=True)
+                self.child_process.wait()
 
-        terminator = ChildTerminator(self.child_process)
-        terminator.terminate()
+        except Exception:
+            pass
         self.child_process = None
 
 
@@ -74,6 +78,8 @@ class ConnectorBackend:
         self.child_process.sendline(self.config.USER_PW)
         self.child_process.expect_exact('Initialization Sequence Completed')
 
+
+    
     def establish_connection(self, curr_ip):
         establishing_is_possible = self.check_connection_status(curr_ip)
         if not establishing_is_possible:
@@ -81,7 +87,8 @@ class ConnectorBackend:
             return
         # For some reason the vpn connection does not work if pexpect spawns the child process inside a thread
         # (that's why it is not inside _connect_task) ??
-        self.child_process = pexpect.spawn(self.config.OPENVPN_SCRIPT_PATH, preexec_fn=_set_pdeathsig)
+        self.child_process = pexpect.spawn(self.config.OPENVPN_SCRIPT_PATH, preexec_fn=_set_pdeathsig, ignore_sighup=False)
+
         if self.debug:
             self.child_process.logfile = sys.stdout.buffer
 
