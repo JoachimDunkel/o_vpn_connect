@@ -58,8 +58,15 @@ class ConnectorBackend:
             if self.child_process is None or self.child_process.pid is None:
                 return
             if self.child_process.isalive():
-                self.child_process.terminate(force=True)
+                pgid = os.getpgid(self.child_process.pid)
+                os.killpg(pgid, signal.SIGINT)
+                time.sleep(0.2)
+
                 self.child_process.wait()
+                time.sleep(0.2)
+                
+                if self.child_process.isalive():
+                    print("FAILED to close the connection - Process is still alive after termination.")
 
         except Exception:
             pass
@@ -87,6 +94,7 @@ class ConnectorBackend:
             return
         # For some reason the vpn connection does not work if pexpect spawns the child process inside a thread
         # (that's why it is not inside _connect_task) ??
+        self.ensure_child_stopped()
         self.child_process = pexpect.spawn(self.config.OPENVPN_SCRIPT_PATH, preexec_fn=_set_pdeathsig, ignore_sighup=False)
 
         if self.debug:
